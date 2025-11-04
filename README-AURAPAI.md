@@ -2,7 +2,7 @@
 
 A specialized fork of [llama.cpp](https://github.com/ggerganov/llama.cpp) with integrated **RAG (Retrieval-Augmented Generation)** middleware for context-augmented AI responses.
 
-🌐 **Live Demo:** [https://aurapai.dpdns.org](https://aurapai.dpdns.org)
+🌐 **Live Demo:** Llama-aurapai-RAG (https://dataflowxx.dpdns.org/) with RAG (https://aurapai.dpdns.org/)
 
 ## ✨ Additional Features vs Upstream
 
@@ -50,6 +50,7 @@ cmake --build . --config Release --target llama-server
   --rag-max-results 5 \
   --rag-similarity-threshold 0.3
 ```
+Current http://aurapai.dpdns.org is a temporary RAG server.
 
 **With local RAG service:**
 ```bash
