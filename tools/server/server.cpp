@@ -1,5 +1,6 @@
 #include "chat.h"
 #include "utils.hpp"
+#include "rag_middleware.hpp"
 
 #include "arg.h"
 #include "common.h"
@@ -1969,6 +1970,9 @@ struct server_context {
 
     common_chat_templates_ptr chat_templates;
     oaicompat_parser_options  oai_parser_opt;
+
+    // RAG middleware
+    std::unique_ptr<llama::RAGMiddleware> rag_middleware;
 
     ~server_context() {
         mtmd_free(mctx);
@@ -4572,6 +4576,46 @@ int main(int argc, char ** argv) {
         LOG_DBG("request: %s\n", req.body.c_str());
 
         auto body = json::parse(req.body);
+        
+        // RAG augmentation if enabled
+        if (ctx_server.rag_middleware && ctx_server.rag_middleware->get_config().enabled) {
+            // Check if this request should use RAG
+            if (body.contains("messages") && llama::should_use_rag(body["messages"], body)) {
+                try {
+                    // Extract user query from messages
+                    std::string user_query;
+                    for (const auto& msg : body["messages"]) {
+                        if (msg.contains("role") && msg["role"] == "user" && msg.contains("content")) {
+                            user_query = msg["content"].get<std::string>();
+                        }
+                    }
+                    
+                    if (!user_query.empty()) {
+                        LOG_INF("RAG: augmenting query (length=%zu)\n", user_query.length());
+                        
+                        // Get RAG context
+                        auto rag_response = ctx_server.rag_middleware->augment_query(user_query);
+                        
+                        if (rag_response.success) {
+                            LOG_INF("RAG: retrieved %zu chunks, latency=%.1fms\n",
+                                   rag_response.chunks.size(), rag_response.latency_ms);
+
+                            // Inject context or at minimum the current date if no context
+                            body["messages"] = llama::RAGMiddleware::inject_context_into_messages(
+                                body["messages"],
+                                rag_response.augmented_context
+                            );
+                        } else {
+                            LOG_WRN("RAG: augmentation failed: %s\n", rag_response.error_message.c_str());
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    LOG_ERR("RAG: exception during augmentation: %s\n", e.what());
+                    // Continue without RAG if error occurs
+                }
+            }
+        }
+        
         std::vector<raw_buffer> files;
         json data = oaicompat_chat_params_parse(
             body,
@@ -5071,6 +5115,28 @@ int main(int argc, char ** argv) {
     state.store(SERVER_STATE_READY);
 
     LOG_INF("%s: model loaded\n", __func__);
+
+    // Initialize RAG middleware if enabled
+    if (params.rag_enabled) {
+        LOG_INF("%s: initializing RAG middleware\n", __func__);
+        llama::RAGConfig rag_config;
+        rag_config.enabled = true;
+        rag_config.aurapai_host = params.rag_host;
+        rag_config.aurapai_port = params.rag_port;
+        rag_config.max_results = params.rag_max_results;
+        rag_config.similarity_threshold = params.rag_similarity_threshold;
+        rag_config.include_tools = params.rag_include_tools;
+        rag_config.timeout_ms = params.rag_timeout_ms;
+
+        ctx_server.rag_middleware = std::make_unique<llama::RAGMiddleware>(rag_config);
+
+        // Health check
+        if (ctx_server.rag_middleware->is_healthy()) {
+            LOG_INF("%s: RAG middleware initialized and healthy\n", __func__);
+        } else {
+            LOG_WRN("%s: RAG middleware initialized but Aurapai service is not responding\n", __func__);
+        }
+    }
 
     // print sample chat example to make it clear which template is used
     LOG_INF("%s: chat template, chat_template: %s, example_format: '%s'\n", __func__,

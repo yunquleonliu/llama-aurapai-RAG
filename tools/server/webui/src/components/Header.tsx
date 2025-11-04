@@ -34,7 +34,7 @@ export default function Header() {
         <Bars3Icon className="h-5 w-5" />
       </label>
 
-      <div className="grow text-2xl font-bold ml-2">llama.cpp</div>
+      <div className="grow text-2xl font-bold ml-2">Llama-aurapai-RAG</div>
 
       {/* action buttons (top right) */}
       <div className="flex items-center">

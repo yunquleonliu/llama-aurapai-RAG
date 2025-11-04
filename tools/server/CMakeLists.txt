@@ -11,6 +11,8 @@ endif()
 
 set(TARGET_SRCS
     server.cpp
+    rag_middleware.cpp
+    rag_middleware.hpp
     utils.hpp
 )
 set(PUBLIC_ASSETS

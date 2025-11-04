@@ -443,6 +443,15 @@ struct common_params {
     bool endpoint_props   = false; // only control POST requests, not GET
     bool endpoint_metrics = false;
 
+    // RAG (Retrieval-Augmented Generation) params
+    bool        rag_enabled           = false;       // enable RAG middleware
+    std::string rag_host              = "localhost"; // Aurapai service host
+    int         rag_port              = 8001;        // Aurapai service port
+    int         rag_max_results       = 5;           // max context chunks to retrieve
+    float       rag_similarity_threshold = 0.3f;     // minimum similarity score
+    bool        rag_include_tools     = false;       // suggest tools in RAG response
+    int         rag_timeout_ms        = 5000;        // HTTP request timeout
+
     bool log_json = false;
 
     std::string slot_save_path;

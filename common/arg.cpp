@@ -2967,6 +2967,48 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
         }
     ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_NO_ENDPOINT_SLOTS"));
     add_opt(common_arg(
+        {"--rag-enabled"},
+        string_format("enable RAG (Retrieval-Augmented Generation) middleware (default: %s)", params.rag_enabled ? "enabled" : "disabled"),
+        [](common_params & params) {
+            params.rag_enabled = true;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_RAG_ENABLED"));
+    add_opt(common_arg(
+        {"--rag-host"}, "HOST",
+        string_format("Aurapai service host for RAG (default: %s)", params.rag_host.c_str()),
+        [](common_params & params, const std::string & value) {
+            params.rag_host = value;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_RAG_HOST"));
+    add_opt(common_arg(
+        {"--rag-port"}, "PORT",
+        string_format("Aurapai service port for RAG (default: %d)", params.rag_port),
+        [](common_params & params, int value) {
+            params.rag_port = value;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_RAG_PORT"));
+    add_opt(common_arg(
+        {"--rag-max-results"}, "N",
+        string_format("maximum context chunks to retrieve from RAG (default: %d)", params.rag_max_results),
+        [](common_params & params, int value) {
+            params.rag_max_results = value;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_RAG_MAX_RESULTS"));
+    add_opt(common_arg(
+        {"--rag-similarity-threshold"}, "THRESHOLD",
+        string_format("minimum similarity score for RAG retrieval (default: %.2f)", params.rag_similarity_threshold),
+        [](common_params & params, const std::string & value) {
+            params.rag_similarity_threshold = std::stof(value);
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_RAG_SIMILARITY_THRESHOLD"));
+    add_opt(common_arg(
+        {"--rag-include-tools"},
+        "enable tool suggestions in RAG responses (default: disabled)",
+        [](common_params & params) {
+            params.rag_include_tools = true;
+        }
+    ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_RAG_INCLUDE_TOOLS"));
+    add_opt(common_arg(
         {"--slot-save-path"}, "PATH",
         "path to save slot kv cache (default: disabled)",
         [](common_params & params, const std::string & value) {
